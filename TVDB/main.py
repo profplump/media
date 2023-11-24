@@ -100,8 +100,9 @@ try:
     e['date'] = None if episode['aired'] is None else datetime.strptime(episode['aired'], '%Y-%m-%d')
     e['description'] = '' if episode['overview'] is None else episode['overview'].strip()
     e['filename'] = '{series} - S{season:02d}E{number:02d} - {name}'.format(
-      series=e['series'].replace(':', ' -'), season=e['season'], number=e['number'], name=e['name'].replace(':', ' -')
+      series=e['series'], season=e['season'], number=e['number'], name=e['name']
     )
+    e['filename'] = e['filename'].replace(':', ' -').replace('/', ' - ').replace('  ', ' ')
     episodes.append(e)
 except Exception as error:
   print('Unable to parse episode data: {e}'.format(e=error))
