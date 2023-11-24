@@ -114,7 +114,7 @@ for e in episodes:
     not e['season'] in seasons or
     not e['number'] in seasons[ e['season'] ]
   ):
-    print('Missing: {m}'.format(m=e['filename']))
+    #print('Missing: {m}'.format(m=e['filename']))
     continue
   files = seasons[ e['season'] ][ e['number'] ]
   for file in files:
