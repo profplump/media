@@ -96,11 +96,11 @@ try:
     e['series'] = seriesName
     e['season'] = int(episode['seasonNumber'])
     e['number'] = int(episode['number'])
-    e['name'] = episode['name'].strip().replace(':', ' -')
+    e['name'] = episode['name'].strip()
     e['date'] = None if episode['aired'] is None else datetime.strptime(episode['aired'], '%Y-%m-%d')
     e['description'] = '' if episode['overview'] is None else episode['overview'].strip()
     e['filename'] = '{series} - S{season:02d}E{number:02d} - {name}'.format(
-      series=e['series'], season=e['season'], number=e['number'], name=e['name']
+      series=e['series'].replace(':', ' -'), season=e['season'], number=e['number'], name=e['name'].replace(':', ' -')
     )
     episodes.append(e)
 except Exception as error:
