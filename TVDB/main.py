@@ -1,6 +1,7 @@
 # Imports
 import re
 import os
+import pathlib
 import argparse
 from datetime import datetime
 import tvdb_v4_official
@@ -25,8 +26,9 @@ def readConfigLine(file):
 
 # CLI config
 parser = argparse.ArgumentParser('TVDB Renamer')
-parser.add_argument('path', help='The directory containing files to be renamed')
-parser.add_argument('--api', default=default_apikey, required=False, help='Path to a file containing the TVDB API key')
+parser.add_argument('--api', default=default_apikey, help='Path to a file containing the TVDB API key')
+parser.add_argument('--verbose', '-v', action='store_true', help='Display missing and unexpected episodes')
+parser.add_argument('path', type=pathlib.Path, help='The directory containing files to be renamed')
 cli = parser.parse_args()
 if not os.path.isfile(cli.api):
   print('Invalid API key file path: {path}'.format(path=cli.api))
@@ -108,13 +110,32 @@ except Exception as error:
   print('Unable to parse episode data: {e}'.format(e=error))
   exit(1)
 
+# Find unexpected episodes
+if cli.verbose:
+  db_seasons = {}
+  for e in episodes:
+    if not e['season'] in db_seasons:
+      db_seasons[ e['season'] ] = {}
+    if not e['number'] in db_seasons[ e['season'] ]:
+      db_seasons[ e['season'] ][ e['number'] ] = True
+  for snum, s in seasons.items():
+    for enum, elist in s.items():
+      for e in elist:
+        if (
+          not e['season'] in db_seasons or
+          not e['number'] in db_seasons[ e['season'] ]
+        ):
+          print('Unexpected: {f}'.format(f=e['file']))
+  del db_seasons
+
 # Rename matched files
 for e in episodes:
   if (
     not e['season'] in seasons or
     not e['number'] in seasons[ e['season'] ]
   ):
-    #print('Missing: {m}'.format(m=e['filename']))
+    if cli.verbose:
+      print('Missing: {m}'.format(m=e['filename']))
     continue
   files = seasons[ e['season'] ][ e['number'] ]
   for file in files:
