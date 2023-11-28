@@ -135,7 +135,8 @@ for e in episodes:
     not e['number'] in seasons[ e['season'] ]
   ):
     if cli.verbose:
-      print('Missing: {m}'.format(m=e['filename']))
+      if e['date'] is None or e['date'] <= datetime.today():
+        print('Missing: {m}'.format(m=e['filename']))
     continue
   files = seasons[ e['season'] ][ e['number'] ]
   for file in files:
