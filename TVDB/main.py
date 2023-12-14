@@ -8,10 +8,11 @@ import tvdb_v4_official
 
 # Default config
 default_apikey = os.path.expanduser('~/.tvdb_apikey')
-default_lang = 'eng'
+default_lang   = 'eng'
+default_order  = 'default'
 
 # Local helpers
-def readConfigLine(file):
+def readConfigLine(file, opt=False):
   value = None
   try:
     with open(file, 'r') as f:
@@ -22,14 +23,16 @@ def readConfigLine(file):
           value = line.strip()
           break
   except Exception as error:
-    print('Unable to read config: {e}'.format(e=error))
+    if not opt:
+      print('Unable to read config: {e}'.format(e=error))
   return value
 
 # CLI config
 parser = argparse.ArgumentParser('TVDB Renamer')
+parser.add_argument('--verbose', '-v', action='store_true', help='Display debug and episode data')
 parser.add_argument('--api', default=default_apikey, help='Path to a file containing the TVDB API key')
-parser.add_argument('--verbose', '-v', action='store_true', help='Display missing and unexpected episodes')
-parser.add_argument('--lang', '-l', default=default_lang, help='TVDB language code')
+parser.add_argument('--lang', '-l', help='Force TVDB language code')
+parser.add_argument('--order', '-o', help='Force TVDB order type')
 parser.add_argument('path', type=pathlib.Path, help='The directory containing files to be renamed')
 cli = parser.parse_args()
 if not os.path.isfile(cli.api):
@@ -42,7 +45,7 @@ if cli.lang == 'None' or cli.lang == '':
   cli.lang = None
 if cli.verbose:
   print('Path: {p}'.format(p=cli.path))
-  print('Language: {l}'.format(l=cli.lang))
+  print('Forced Lang/Order: {l}/{o}'.format(l=cli.lang, o=cli.order))
 
 # Move to keep the file paths flat
 try:
@@ -83,25 +86,42 @@ for file in dirfiles:
 # Fetch the TVDB episode list
 try:
   apikey = readConfigLine(cli.api)
-  series_id = readConfigLine('.tvdb')
-  if cli.verbose:
-    print('Series: {id}'.format(id=series_id))
-  if apikey is None or series_id is None:
+  id = readConfigLine('.tvdb')
+
+  if cli.lang is not None:
+    lang = cli.lang
+  else:
+    lang = readConfigLine('.tvdb_lang', opt=True)
+  if lang is None:
+    lang = default_lang
+
+  if cli.order is not None:
+    order = cli.order
+  else:
+    order = readConfigLine('.tvdb_order', opt=True)
+  if order is None:
+    order = default_order
+
+  if apikey is None or id is None:
     print('Invalid TVDB parameters')
     exit(1)
+  if cli.verbose:
+    print('Series: {id}'.format(id=id))
+    print('Lang/Order: {l}/{o}'.format(l=lang, o=order))
+
   tvdb = tvdb_v4_official.TVDB(apikey)
-  if cli.lang is None:
-    series = tvdb.get_series(id=series_id)
+  if lang is None:
+    series = tvdb.get_series(id=id)
   else:
-    series = tvdb.get_series_translation(id=series_id, lang=cli.lang)
-  data = tvdb.get_series_episodes(id=series_id, lang=cli.lang)
+    series = tvdb.get_series_translation(id=id, lang=lang)
+  data = tvdb.get_series_episodes(id=id, lang=lang, season_type=order)
   del tvdb
-  del series_id
+  del id
   del apikey
 except Exception as error:
   print(
     "Unable to fetch series {id}: {e}\nSeries:\n{s}\nEpisodes:\n{ep}".format(
-      id=series_id, e=error, s=series, ep=data
+      id=id, e=error, s=series, ep=data
     )
   )
   exit(1)
