@@ -6,8 +6,14 @@ if [ -z "${H}" ]; then
   H=$(( 23 - `date +%H` ))
 fi
 
-# Stop
+# Find
 PID=$(ps Ax | grep -v grep | grep HandBrake | awk '{print $1}' | head -n 1)
+if [ -z "${PID}" ]; then
+  echo "HandBrake not running" 1>&2
+  exit 0
+fi
+
+# Stop
 kill -SIGSTOP $PID
 
 # Restart
